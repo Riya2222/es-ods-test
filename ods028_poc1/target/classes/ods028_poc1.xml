@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+    <db:mysql-config name="MySQL_Configuration" host="localhost" port="3306" user="root" password="admin" database="ods028" doc:name="MySQL Configuration"/>
+    <db:template-query name="Template_Query1" doc:name="Template Query">
+        <db:parameterized-query><![CDATA[insert into ods_component_inventory(plant,countryCode,manufacturerId,componentId,stockOnHandQt,reservedQt,qualityCheckQt,qtOnDispatchNote,stockAvailableQt,orderQt,transactionDateTime)values(:plant,:countryCode,:manufacturerId,:componentId,:stockOnHandQt,:reservedQt,:qualityCheckQt,:qtOnDispatchNote,:stockAvailableQt,:orderQt,:transactionDateTime)]]></db:parameterized-query>
+                    
+    </db:template-query>
+    <db:template-query name="Template_Query" doc:name="Template Query">
+        <db:parameterized-query><![CDATA[insert into ods_component_inventory(plant,countryCode,manufacturerId,componentId,stockOnHandQt,reservedQt,qualityCheckQt,qtOnDispatchNote,stockAvailableQt,orderQt,transactionDateTime)values(:plant,:countryCode,:manufacturerId,:componentId,:stockOnHandQt,:reservedQt,:qualityCheckQt,:qtOnDispatchNote,:stockAvailableQt,:orderQt,:transactionDateTime)]]></db:parameterized-query>
+    </db:template-query>
+    <file:connector name="File" autoDelete="true" outputAppend="true" streaming="false" validateConnections="true" doc:name="File"/>
+    <flow name="ods028_poc1Flow">
+        <file:inbound-endpoint path="C:\Users\Riya.Arly\Desktop\sample" moveToDirectory="C:\Users\Riya.Arly\Desktop\input" responseTimeout="10000" doc:name="File"/>
+        <logger message="The file is getting processed #[payload]" level="INFO" doc:name="Logger"/>
+        <component class="com.umgi.es.ods028.processes.ODS028InputFileReader" doc:name="Java"/>
+        <logger message="File after getting processed!!!!  #[payload]" level="INFO" doc:name="Logger"/>
+        <set-payload value="#[flowVars.totalList]" doc:name="Set Payload"/>
+        <logger message="payload value  #[payload]" level="INFO" doc:name="Logger"/>
+        <db:insert config-ref="MySQL_Configuration" doc:name="Database" bulkMode="true">
+            <db:template-query-ref name="Template_Query"/>
+            <db:in-param name="plant" value="#[payload.getPlant()]"/>
+            <db:in-param name="countryCode" value="#[payload.getCountryCode()]"/>
+            <db:in-param name="manufacturerId" value="#[payload.getManufacturerId()]"/>
+            <db:in-param name="componentId" value="#[payload.getComponentId()]"/>
+            <db:in-param name="stockOnHandQt" value="#[payload.getStockOnHandQt()]"/>
+            <db:in-param name="reservedQt" value="#[payload.getReservedQt()]"/>
+            <db:in-param name="qualityCheckQt" value="#[payload.getQualityCheckQt()]"/>
+            <db:in-param name="qtOnDispatchNote" value="#[payload.getQtOnDispatchNote()]"/>
+            <db:in-param name="stockAvailableQt" value="#[payload.getStockAvailableQt()]"/>
+            <db:in-param name="orderQt" value="#[payload.getOrderQt()]"/>
+            <db:in-param name="transactionDateTime" value="#[function:now]"/>
+        </db:insert>
+        <logger message="data inserted sucessfully!!!!" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>
